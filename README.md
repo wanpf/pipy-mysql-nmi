@@ -50,5 +50,5 @@
 <img width="1192" alt="image" src="https://github.com/wanpf/pipy-mysql-nmi/assets/2276200/4f7f7355-337b-4118-87cb-636c57872e48">
 
 ## 3. 说明  
-默认的 mysql-nmi.so 适用于 linux/x86-64 环境， 其他环境需要重新编译。 
-
+1、默认的 mysql-nmi.so 适用于 linux/x86-64 环境， 其他环境需要重新编译。   
+2、mysql-nmi.so 调用 libmysqlclient 库是静态编译，服务器上无需安装 mysql客户端。  
