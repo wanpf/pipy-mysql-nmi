@@ -1,23 +1,16 @@
 // clang-format off
-#include <assert.h>
 #include <errno.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#include <stdarg.h>
 #include <sys/time.h>
 #include <time.h>
-#include <math.h>
+
 #include <pipy/nmi.h>
 #include <mysql.h>
 
-enum {
-  id_variable_mysqlIp,
-  id_variable_mysqlPort,
-  id_variable_mysqlUser,
-  id_variable_mysqlPasswd,
-  id_variable_mysqlSql,
-};
 // clang-format on
 
 int probe_mysql(char *ip, int port, char *user, char *passwd, char *sql) {
@@ -55,6 +48,12 @@ int probe_mysql(char *ip, int port, char *user, char *passwd, char *sql) {
 
 struct pipeline_state {
   int is_started;
+  // user data
+  int port;
+  char ip[128];
+  char user[128];
+  char passwd[128];
+  char sql[1024];
 };
 
 static void pipeline_init(pipy_pipeline ppl, void **user_ptr) {
@@ -67,9 +66,10 @@ static void pipeline_free(pipy_pipeline ppl, void *user_ptr) {
   free(user_ptr);
 }
 
-static char *get_string(pipy_pipeline ppl, int id, char *buf, int size) {
+static char *get_string(pjs_value head, char *name, char *buf, int size) {
   pjs_value value = pjs_undefined();
-  pipy_get_variable(ppl, id, value);
+
+  pjs_object_get_property(head, pjs_string(name, strlen(name)), value);
   if (pjs_is_undefined(value)) {
     return NULL;
   }
@@ -81,35 +81,34 @@ static char *get_string(pipy_pipeline ppl, int id, char *buf, int size) {
   return NULL;
 }
 
-static int get_int(pipy_pipeline ppl, int id) {
+static int get_int(pjs_value head, char *name, int *n) {
   pjs_value value = pjs_undefined();
-  pipy_get_variable(ppl, id, value);
+
+  pjs_object_get_property(head, pjs_string(name, strlen(name)), value);
   if (pjs_is_undefined(value)) {
     return -1;
   }
-  return pjs_to_number(value);
+  *n = pjs_to_number(value);
+  return 0;
 }
 
 static void pipeline_process(pipy_pipeline ppl, void *user_ptr, pjs_value evt) {
   struct pipeline_state *state = (struct pipeline_state *)user_ptr;
   if (pipy_is_MessageStart(evt)) {
     state->is_started = 1;
+
+    pjs_value head = pipy_MessageStart_get_head(evt);
+
+    get_string(head, "mysqlIp", state->ip, sizeof(state->ip));
+    get_int(head, "mysqlPort", &state->port);
+    get_string(head, "mysqlUser", state->user, sizeof(state->user));
+    get_string(head, "mysqlPasswd", state->passwd, sizeof(state->passwd));
+    get_string(head, "mysqlSql", state->sql, sizeof(state->sql));
   } else if (pipy_is_MessageEnd(evt)) {
     if (state->is_started == 1) {
       pjs_value response_head = pjs_object();
 
-      int port = get_int(ppl, id_variable_mysqlPort);
-      char ip[128] = {'\0'};
-      char user[128] = {'\0'};
-      char passwd[128] = {'\0'};
-      char sql[1024] = {'\0'};
-
-      get_string(ppl, id_variable_mysqlIp, ip, sizeof(ip));
-      get_string(ppl, id_variable_mysqlUser, user, sizeof(user));
-      get_string(ppl, id_variable_mysqlPasswd, passwd, sizeof(passwd));
-      get_string(ppl, id_variable_mysqlSql, sql, sizeof(sql));
-
-      int rc = probe_mysql(ip, port, user, passwd, sql);
+      int rc = probe_mysql(state->ip, state->port, state->user, state->passwd, state->sql);
 
       pjs_object_set_property(response_head, pjs_string("result", strlen("result")), pjs_number(rc));
 
@@ -119,12 +118,4 @@ static void pipeline_process(pipy_pipeline ppl, void *user_ptr, pjs_value evt) {
   }
 }
 
-void pipy_module_init() {
-  pipy_define_variable(id_variable_mysqlIp, "__mysqlIp", "mysql-nmi", pjs_undefined());
-  pipy_define_variable(id_variable_mysqlPort, "__mysqlPort", "mysql-nmi", pjs_undefined());
-  pipy_define_variable(id_variable_mysqlUser, "__mysqlUser", "mysql-nmi", pjs_undefined());
-  pipy_define_variable(id_variable_mysqlPasswd, "__mysqlPasswd", "mysql-nmi", pjs_undefined());
-  pipy_define_variable(id_variable_mysqlSql, "__mysqlSql", "mysql-nmi", pjs_undefined());
-
-  pipy_define_pipeline("", pipeline_init, pipeline_free, pipeline_process);
-}
+void pipy_module_init() { pipy_define_pipeline("", pipeline_init, pipeline_free, pipeline_process); }

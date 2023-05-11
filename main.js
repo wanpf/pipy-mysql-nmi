@@ -1,22 +1,17 @@
 pipy()
 
-  .import({
-    __mysqlIp: 'mysql-nmi',
-    __mysqlPort: 'mysql-nmi',
-    __mysqlUser: 'mysql-nmi',
-    __mysqlPasswd: 'mysql-nmi',
-    __mysqlSql: 'mysql-nmi',
-  })
+// test case 1
 
   .task()
   .onStart(
     () => (
-      __mysqlIp = '127.0.0.1',
-      __mysqlPort = '3305',
-      __mysqlUser = 'root',
-      __mysqlPasswd = '123456',
-      __mysqlSql = 'show slave status',
-      new Message()
+      new Message({
+        mysqlIp: '127.0.0.1',
+        mysqlPort: 3305,
+        mysqlUser: 'root',
+        mysqlPasswd: '123456',
+        mysqlSql: 'show slave status'
+      })
     )
   )
   .use('./mysql-nmi.so')
@@ -29,15 +24,18 @@ pipy()
     )
   )
 
+// test case 2
+
   .task()
   .onStart(
     () => (
-      __mysqlIp = '127.0.0.1',
-      __mysqlPort = '3306',
-      __mysqlUser = 'root',
-      __mysqlPasswd = '123456',
-      __mysqlSql = 'show slave status',
-      new Message()
+      new Message({
+        mysqlIp: '127.0.0.1',
+        mysqlPort: 3306,
+        mysqlUser: 'root',
+        mysqlPasswd: '123456',
+        mysqlSql: 'show slave status'
+      })
     )
   )
   .use('./mysql-nmi.so')
@@ -50,15 +48,19 @@ pipy()
     )
   )
 
+
+// test case 3
+
   .task()
   .onStart(
     () => (
-      __mysqlIp = '127.0.0.1',
-      __mysqlPort = '3307',
-      __mysqlUser = 'root',
-      __mysqlPasswd = '123456',
-      __mysqlSql = 'show slave status',
-      new Message()
+      new Message({
+        mysqlIp: '127.0.0.1',
+        mysqlPort: 3307,
+        mysqlUser: 'root',
+        mysqlPasswd: '123456',
+        mysqlSql: 'show slave status'
+      })
     )
   )
   .use('./mysql-nmi.so')
@@ -70,3 +72,4 @@ pipy()
       new Message()
     )
   )
+
