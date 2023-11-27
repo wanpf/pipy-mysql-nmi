@@ -99,11 +99,13 @@ static void pipeline_process(pipy_pipeline ppl, void *user_ptr, pjs_value evt) {
 
     pjs_value head = pipy_MessageStart_get_head(evt);
 
-    get_string(head, "mysqlIp", state->ip, sizeof(state->ip));
-    get_int(head, "mysqlPort", &state->port);
-    get_string(head, "mysqlUser", state->user, sizeof(state->user));
-    get_string(head, "mysqlPasswd", state->passwd, sizeof(state->passwd));
-    get_string(head, "mysqlSql", state->sql, sizeof(state->sql));
+    if (!pjs_is_null(head)) {
+      get_string(head, "mysqlIp", state->ip, sizeof(state->ip));
+      get_int(head, "mysqlPort", &state->port);
+      get_string(head, "mysqlUser", state->user, sizeof(state->user));
+      get_string(head, "mysqlPasswd", state->passwd, sizeof(state->passwd));
+      get_string(head, "mysqlSql", state->sql, sizeof(state->sql));
+    }
   } else if (pipy_is_MessageEnd(evt)) {
     if (state->is_started == 1) {
       pjs_value response_head = pjs_object();
